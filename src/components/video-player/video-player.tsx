@@ -1,25 +1,51 @@
-import {Box, Flex, IconButton, Slider, Span} from "@chakra-ui/react";
-import {FaPlay, FaPause} from "react-icons/fa6";
-import {TbPlayerSkipBack, TbPlayerSkipForward} from "react-icons/tb";
-import {SlVolume1, SlVolume2, SlVolumeOff} from "react-icons/sl";
-import {GoScreenFull} from "react-icons/go";
-import {RiFullscreenExitLine} from "react-icons/ri";
-import {IoSettingsOutline} from "react-icons/io5";
-
+import {Box, createListCollection, Flex, IconButton, Popover, Portal, Select, Slider, Span} from "@chakra-ui/react";
 import {useRef} from "react";
 import {useVideoPlayer} from "@/hooks/use-video-player/use-video-player";
 import {useHotkeys} from "@/hooks/use-hotkeys/use-hotkeys";
+import {
+  IconExitFullScreen,
+  IconFullScreen,
+  IconPause,
+  IconPlay,
+  IconSetting,
+  IconVolumeLarge,
+  IconVolumeMuted,
+  IconVolumeSmall,
+} from "@/assets/icons";
+import {IconSkipBack} from "@/assets/icons/skip-back";
+import {IconSkipFoward} from "@/assets/icons/skip-forward";
+import { images } from "@/assets/images";
 
 interface IVideoPlayerProps {
   src: string;
 }
 
+const PLAYBACK_RATE_OPTIONS = [
+  {label: "0.25x", value: 0.25},
+  {label: "0.5x", value: 0.5},
+  {label: "0.75x", value: 0.75},
+  {label: "1x", value: 1},
+  {label: "1.25x", value: 1.25},
+  {label: "1.5x", value: 1.5},
+  {label: "1.75x", value: 1.75},
+  {label: "2x", value: 2},
+];
+
 export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const {videoState, handlePlay, handleFullScreen, handleSeek, handleChangeVolume, hanldeMute, formatTime} =
-    useVideoPlayer(videoRef);
+  const {
+    videoState,
+    handlePlay,
+    handleFullScreen,
+    handleSeek,
+    handleChangeVolume,
+    hanldeMute,
+    handlePlaybackRate,
+    handleShowControls,
+    formatTime,
+  } = useVideoPlayer(videoRef);
 
   useHotkeys([
     ["space", handlePlay],
@@ -32,7 +58,14 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
   ]);
 
   return (
-    <Box position={"relative"} width={"100%"} height={"100%"} ref={containerRef}>
+    <Box
+      position={"relative"}
+      width={"100%"}
+      height={"100%"}
+      ref={containerRef}
+      onMouseEnter={() => videoState.isPlaying && handleShowControls(true)}
+      onMouseLeave={() => videoState.isPlaying && handleShowControls(false)}
+    >
       <Flex
         width={"100%"}
         height={"100%"}
@@ -43,7 +76,23 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
         <video ref={videoRef} src={src} />
       </Flex>
 
-      <Box position={"absolute"} bottom={"0px"} width={"100%"}>
+      <Box
+        height={"54px"}
+        bottom={"0"}
+        backgroundPosition={"bottom"}
+        backgroundImage={`url('${images.gradientBottom}')`}
+        backgroundRepeat={"repeat-x"}
+        position={"absolute"}
+        width={"100%"}
+        pointerEvents={"none"}
+        visibility={videoState.isShowControls ? "visible" : "hidden"}
+      />
+      <Box
+        position={"absolute"}
+        bottom={"0px"}
+        width={"100%"}
+        visibility={videoState.isShowControls ? "visible" : "hidden"}
+      >
         <Slider.Root
           min={0}
           max={videoState.duration}
@@ -59,6 +108,7 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
               <Slider.Range bg="red.600" />
             </Slider.Track>
             <Slider.Thumb
+              visibility={"unset !important"}
               index={0}
               borderColor="red.600"
               bg={"red.600"}
@@ -70,45 +120,45 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
         <Flex justify-content={"space-between"} textShadow={"0 0 2px rgba(0,0,0,.5)"}>
           <Flex flex={"1"}>
             <IconButton
-              _hover={{background: "gray"}}
+              _hover={{background: "none"}}
               variant={"ghost"}
               color={"white"}
-              size={"2xl"}
+              size={"xl"}
               onClick={handlePlay}
             >
-              <FaPause strokeWidth={"1.5"} />
+              {videoState.isPlaying ? <IconPause /> : <IconPlay />}
             </IconButton>
             <IconButton
               onClick={() => handleSeek(videoState.currentTime - 5)}
-              _hover={{background: "gray"}}
+              _hover={{background: "none"}}
               variant={"ghost"}
               color={"white"}
-              size={"2xl"}
+              size={"xl"}
             >
-              <TbPlayerSkipBack strokeWidth={"1.5"} />
+              <IconSkipBack strokeWidth={"1.5"} />
             </IconButton>
             <IconButton
               onClick={() => handleSeek(videoState.currentTime + 5)}
-              _hover={{background: "gray"}}
+              _hover={{background: "none"}}
               variant={"ghost"}
               color={"white"}
-              size={"2xl"}
+              size={"xl"}
             >
-              <TbPlayerSkipForward strokeWidth={"1.5"} />
+              <IconSkipFoward strokeWidth={"1.5"} />
             </IconButton>
             <IconButton
-              _hover={{background: "gray"}}
+              _hover={{background: "none"}}
               variant={"ghost"}
               color={"white"}
-              size={"2xl"}
+              size={"xl"}
               onClick={hanldeMute}
             >
               {videoState.isMuted || videoState.volume == 0 ? (
-                <SlVolumeOff />
+                <IconVolumeMuted />
               ) : videoState.volume >= 0.5 ? (
-                <SlVolume2 strokeWidth={"1.5"} />
+                <IconVolumeLarge />
               ) : (
-                <SlVolume1 strokeWidth={"1.5"} />
+                <IconVolumeSmall />
               )}
             </IconButton>
             <Flex width={"70px"} alignItems={"center"}>
@@ -125,6 +175,7 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
                     <Slider.Range bg="white" />
                   </Slider.Track>
                   <Slider.Thumb
+                    visibility={"unset !important"}
                     index={0}
                     borderColor="white"
                     bg={"white"}
@@ -134,24 +185,60 @@ export const VideoPlayer: React.FC<IVideoPlayerProps> = ({src}) => {
                 </Slider.Control>
               </Slider.Root>
             </Flex>
-            <Box color={"white"} fontSize={"14px"} display={"flex"} alignItems={"center"}>
+            <Box paddingLeft={"12px"} color={"white"} fontSize={"14px"} display={"flex"} alignItems={"center"}>
               <Span>{formatTime(videoState.currentTime)}</Span>
               <Span mx={"6px"}>/</Span>
               <Span>{formatTime(videoState.duration)}</Span>
             </Box>
           </Flex>
+
           <Flex>
-            <IconButton _hover={{background: "gray"}} variant={"ghost"} color={"white"} size={"2xl"}>
-              <IoSettingsOutline strokeWidth={"1.5"} />
-            </IconButton>
+            <Popover.Root size="xs" positioning={{placement: "top"}}>
+              <Popover.Trigger asChild>
+                <IconButton _hover={{background: "none"}} variant={"ghost"} color={"white"} size={"xl"}>
+                  <IconSetting />
+                </IconButton>
+              </Popover.Trigger>
+              <Portal>
+                <Popover.Positioner>
+                  <Popover.Content>
+                    <Popover.Body>
+                      <Select.Root
+                        collection={createListCollection({items: PLAYBACK_RATE_OPTIONS})}
+                        size="sm"
+                        positioning={{sameWidth: true, placement: "top"}}
+                        onSelect={(e) => handlePlaybackRate(e.value as unknown as number)}
+                      >
+                        <Select.Control>
+                          <Select.Trigger border={"none"}>
+                            Playback Rate
+                            <Select.ValueText />
+                          </Select.Trigger>
+                        </Select.Control>
+                        <Select.Positioner>
+                          <Select.Content width="full">
+                            {PLAYBACK_RATE_OPTIONS.map((item) => (
+                              <Select.Item item={item} key={item.value}>
+                                {item.label}
+                                <Select.ItemIndicator />
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Positioner>
+                      </Select.Root>
+                    </Popover.Body>
+                  </Popover.Content>
+                </Popover.Positioner>
+              </Portal>
+            </Popover.Root>
             <IconButton
-              _hover={{background: "gray"}}
+              _hover={{background: "none"}}
               variant={"ghost"}
               color={"white"}
-              size={"2xl"}
+              size={"xl"}
               onClick={() => handleFullScreen(containerRef)}
             >
-              <GoScreenFull strokeWidth={"1.5"} />
+              {videoState.isFullScreen ? <IconExitFullScreen /> : <IconFullScreen />}
             </IconButton>
           </Flex>
         </Flex>

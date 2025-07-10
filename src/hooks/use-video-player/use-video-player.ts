@@ -7,16 +7,20 @@ interface IVideoState {
   currentTime: number;
   duration: number; // all time in seconds
   volume: number; // from 0 to 1
-  isMuted?: boolean; // optional, if you want to track mute state
+  isMuted: boolean; // optional, if you want to track mute state
+  playbackRate: number;
+  isShowControls: boolean; // optional, if you want to track controls visibility
 }
 
-const initVideoState = {
+const initVideoState: IVideoState = {
   isPlaying: false,
   isFullScreen: false,
   currentTime: 0,
   duration: 0,
   volume: 1,
   isMuted: false,
+  playbackRate: 1,
+  isShowControls: true,
 };
 
 export function useVideoPlayer(videoRef: React.RefObject<HTMLVideoElement | null>) {
@@ -33,7 +37,7 @@ export function useVideoPlayer(videoRef: React.RefObject<HTMLVideoElement | null
 
     if (videoState.isPlaying) {
       video.pause();
-      updateVideoSate({isPlaying: false});
+      updateVideoSate({isPlaying: false, isShowControls: true});
       return;
     }
 
@@ -99,6 +103,24 @@ export function useVideoPlayer(videoRef: React.RefObject<HTMLVideoElement | null
     updateVideoSate({isMuted: !videoState.isMuted});
   }, [videoState.isMuted, updateVideoSate, videoRef]);
 
+  const handlePlaybackRate = useCallback(
+    (value: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      video.playbackRate = value;
+      updateVideoSate({playbackRate: value});
+    },
+    [videoState.playbackRate, updateVideoSate, videoRef],
+  );
+
+  const handleShowControls = useCallback(
+    (value: boolean) => {
+      updateVideoSate({isShowControls: value});
+    },
+    [videoState.isShowControls, updateVideoSate],
+  );
+
   useEffect(() => {
     const video = videoRef.current;
 
@@ -125,6 +147,8 @@ export function useVideoPlayer(videoRef: React.RefObject<HTMLVideoElement | null
     handleSeek,
     handleChangeVolume,
     hanldeMute,
+    handlePlaybackRate,
+    handleShowControls,
     formatTime,
   };
 }
